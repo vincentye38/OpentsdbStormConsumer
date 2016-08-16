@@ -1,12 +1,13 @@
 package storm.metrics;
 
-import backtype.storm.Config;
-import backtype.storm.metric.api.IMetricsConsumer;
-import backtype.storm.task.IErrorReporter;
-import backtype.storm.task.TopologyContext;
+
 import com.github.sps.metrics.opentsdb.OpenTsdb;
 import com.github.sps.metrics.opentsdb.OpenTsdbMetric;
-import org.apache.commons.lang.StringUtils;
+import org.apache.storm.Config;
+import org.apache.storm.metric.api.IMetricsConsumer;
+import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
+import org.apache.storm.task.IErrorReporter;
+import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

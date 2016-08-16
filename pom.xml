@@ -6,12 +6,12 @@
 
   <groupId>storm.metrics</groupId>
   <artifactId>storm-metrics-opentsdb</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-storm1.0</version>
   <dependencies>
     <dependency>
       <groupId>org.apache.storm</groupId>
       <artifactId>storm-core</artifactId>
-      <version>0.9.6</version>
+      <version>1.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
