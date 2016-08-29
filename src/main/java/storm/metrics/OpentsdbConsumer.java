@@ -68,7 +68,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
                     .build()
             );
           } else {
-            logger.error("%s's value type is %s, except Number", name, value.getClass().getSimpleName());
+            logger.error("{}'s value type is {}, except Number", name, value.getClass().getSimpleName());
           }
 
         }
@@ -78,7 +78,11 @@ public class OpentsdbConsumer implements IMetricsConsumer {
 
     if (metricList.size() > 0){
       for (OpenTsdbMetric metric : metricList){
-        db.send(metric);
+        try {
+          db.send(metric);
+        } catch (Throwable ex){
+          logger.warn("fail to sending metric: {} \n cause: {}" , metric , ex.getMessage());
+        }
       }
 
     }
