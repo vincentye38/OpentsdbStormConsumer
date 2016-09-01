@@ -80,7 +80,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
       for (OpenTsdbMetric metric : metricList){
         try {
           db.send(metric);
-        } catch (Throwable ex){
+        } catch (RuntimeException ex){
           logger.warn("fail to sending metric: {} \n cause: {}" , metric , ex.getMessage());
         }
       }
