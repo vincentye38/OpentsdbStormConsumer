@@ -56,7 +56,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         Map<LinkedList<String>, Object> allMetrics = flattenMap(dp);
         for (Map.Entry<LinkedList<String>, Object> metric : allMetrics.entrySet()){
           metric.getKey().addFirst(topology);
-          String metricKey = StringUtils.join(metric.getKey(), '.').replace(':','.');
+          String metricKey = StringUtils.join(metric.getKey(), '.').replace(':','_').replace('/','_').replace(' ', '_');
 
           Object value = metric.getValue();
           if (value instanceof Number){
