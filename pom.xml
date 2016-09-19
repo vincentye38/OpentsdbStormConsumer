@@ -17,7 +17,7 @@
     <dependency>
       <groupId>com.github.sps.metrics</groupId>
       <artifactId>metrics-opentsdb</artifactId>
-      <version>1.0.4</version>
+      <version>1.0.8</version>
     </dependency>
   </dependencies>
 
