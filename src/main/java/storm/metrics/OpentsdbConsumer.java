@@ -30,7 +30,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
   public void prepare(Map stormConf, Object registrationArgument, TopologyContext context, IErrorReporter errorReporter) {
     db = OpenTsdb.forService((String)registrationArgument).create();
     topology = ((String)stormConf.get(Config.TOPOLOGY_NAME)).trim();
-    KafkaOffsetMetricPatter = Pattern.compile("partition_(\\d*)/(\\w*)");
+    KafkaOffsetMetricPatter = Pattern.compile("(.*)/partition_(\\d*)/(\\w*)");
     kafkaPartitionMetricPatter = Pattern.compile("(Partition\\{host=.*,\\spartition=(\\d*)\\}/)(.*)");
   }
 
@@ -137,8 +137,10 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         ArrayList<String> newMetricId = new ArrayList<String>(metricId);
         Map<String, String> newMetricAttrs = new HashMap<String, String>(metricAttrs);
         if (matcher.matches()) {
-          String partition = matcher.group(1);
-          String metricName = matcher.group(2);
+          String topicName = matcher.group(1);
+          String partition = matcher.group(2);
+          String metricName = matcher.group(3);
+          newMetricId.add(topicName);
           newMetricId.add(metricName);
           newMetricAttrs.put("partition", partition);
         } else {
