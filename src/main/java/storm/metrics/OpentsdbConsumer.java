@@ -151,7 +151,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         if (value != null && value instanceof Number) {
           retMetrics.add(
               OpenTsdbMetric.named(metricKey)
-                  .withTags(metricAttrs)
+                  .withTags(newMetricAttrs)
                   .withTimestamp(timestamp)
                   .withValue(value)
                   .build()
