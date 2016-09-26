@@ -27,43 +27,31 @@ public class KafkaOpentsdbReporter implements MetricsReporter {
     OpenTsdb opentsdb = OpenTsdb.forService(opentsdbUrl)
       .withGzipEnabled(true) // optional: compress requests to tsd
       .create();
-    Map<String, String> tags = new HashMap<>();
-    tags.putAll(tags);
-    tags.put("reporterUUID", uuid);
+    Map<String, String> reporterTags = new HashMap<>();
+    if (tags != null ) reporterTags.putAll(tags);
+    reporterTags.put("reporterUUID", uuid);
 
     reporter = OpenTsdbReporter.forRegistry(registry)
       .prefixedWith("kafka.producer")
-      .withTags(tags)
+      .withTags(reporterTags)
       .build(opentsdb);
     reporter.start(reportInterval, TimeUnit.SECONDS);
 
     for (final KafkaMetric metric: metrics){
-      registry.register(getName(metric.metricName()), new TaggedGauge<Double>() {
-        public Map<String, String> getTags() {
-          return metric.metricName().tags();
-        }
-
-        public Double getValue() {
-          return metric.value();
-        }
-      });
+      registry.getOrRegisterTaggedMetric(getName(metric.metricName()), new DelegateMetric(metric));
     }
   }
 
   public void metricChange(final KafkaMetric metric) {
-    registry.getOrRegisterTaggedMetric(getName(metric.metricName()), new TaggedGauge<Double>() {
-      public Map<String, String> getTags() {
-        return metric.metricName().tags();
-      }
-
-      public Double getValue() {
-        return metric.value();
-      }
-    });
+    String metricName = getName(metric.metricName());
+    DelegateMetric delegateMetric = (DelegateMetric) registry.getOrRegisterTaggedMetric(metricName, new DelegateMetric(metric));
+    delegateMetric.setMetric(metric);
   }
 
   public void metricRemoval(final KafkaMetric metric) {
-    registry.remove(metric.metricName().name());
+    String metricName = getName(metric.metricName());
+    String taggedName = TaggedMetricRegistry.getTaggedName(metricName, metric.metricName().tags());
+    registry.remove(taggedName);
   }
 
   public void close() {
@@ -90,6 +78,26 @@ public class KafkaOpentsdbReporter implements MetricsReporter {
 
   String getName(MetricName metricName){
     return metricName.group() == null ?  metricName.name(): metricName.group() + "." + metricName.name();
+  }
+
+  static class DelegateMetric implements TaggedGauge<Double>{
+    KafkaMetric metric;
+
+    public DelegateMetric(KafkaMetric metric){
+      this.metric = metric;
+    }
+
+    public Map<String, String> getTags() {
+      return metric.metricName().tags();
+    }
+
+    public Double getValue() {
+      return metric.value();
+    }
+
+    public void setMetric(KafkaMetric metric) {
+      this.metric = metric;
+    }
   }
 
 }
