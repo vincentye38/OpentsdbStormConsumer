@@ -19,6 +19,7 @@ public class KafkaOpentsdbReporter implements MetricsReporter {
   static String  uuid = UUID.randomUUID().toString();
   String opentsdbUrl;
   int reportInterval;
+  Map<String, String> tags;
 
   TaggedMetricRegistry registry = new TaggedMetricRegistry();
   OpenTsdbReporter reporter;
@@ -27,7 +28,9 @@ public class KafkaOpentsdbReporter implements MetricsReporter {
       .withGzipEnabled(true) // optional: compress requests to tsd
       .create();
     Map<String, String> tags = new HashMap<>();
+    tags.putAll(tags);
     tags.put("reporterUUID", uuid);
+
     reporter = OpenTsdbReporter.forRegistry(registry)
       .prefixedWith("kafka.producer")
       .withTags(tags)
@@ -71,6 +74,9 @@ public class KafkaOpentsdbReporter implements MetricsReporter {
     opentsdbUrl = (String) configs.get("opentsdb.url");
     Objects.requireNonNull(opentsdbUrl, "specify property opentsdb.url");
     Object reportIntervalObj = configs.get("reporter.opentsdb.interval");
+    tags = (Map<String, String>) configs.get("opentsdbReporter.tags");
+    if (tags == null) tags = new HashMap<>();
+
     if (reportIntervalObj == null){
       reportInterval = 60;
     } else {
