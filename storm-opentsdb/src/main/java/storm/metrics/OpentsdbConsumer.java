@@ -1,12 +1,13 @@
 package storm.metrics;
 
-import backtype.storm.Config;
-import backtype.storm.metric.api.IMetricsConsumer;
-import backtype.storm.task.IErrorReporter;
-import backtype.storm.task.TopologyContext;
+
 import com.github.sps.metrics.opentsdb.OpenTsdb;
 import com.github.sps.metrics.opentsdb.OpenTsdbMetric;
-import org.apache.commons.lang.StringUtils;
+import org.apache.storm.Config;
+import org.apache.storm.metric.api.IMetricsConsumer;
+import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
+import org.apache.storm.task.IErrorReporter;
+import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
   public void prepare(Map stormConf, Object registrationArgument, TopologyContext context, IErrorReporter errorReporter) {
     db = OpenTsdb.forService((String)registrationArgument).create();
     topology = ((String)stormConf.get(Config.TOPOLOGY_NAME)).trim();
-    KafkaOffsetMetricPatter = Pattern.compile("partition_(\\d*)/(\\w*)");
+    KafkaOffsetMetricPatter = Pattern.compile("(.*)/partition_(\\d*)/(\\w*)");
     kafkaPartitionMetricPatter = Pattern.compile("(Partition\\{host=.*,\\spartition=(\\d*)\\}/)(.*)");
   }
 
@@ -55,7 +56,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         Map<LinkedList<String>, Object> allMetrics = flattenMap(dp);
         for (Map.Entry<LinkedList<String>, Object> metric : allMetrics.entrySet()){
           metric.getKey().addFirst(topology);
-          String metricKey = StringUtils.join(metric.getKey(), '.').replace(':','.');
+          String metricKey = StringUtils.join(metric.getKey(), '.').replace(':','_').replace('/','_').replace(' ', '_');
 
           Object value = metric.getValue();
           if (value instanceof Number){
@@ -67,7 +68,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
                     .build()
             );
           } else {
-            logger.error("%s's value type is %s, except Number", name, value.getClass().getSimpleName());
+            logger.error("{}'s value type is {}, except Number", name, value.getClass().getSimpleName());
           }
 
         }
@@ -77,7 +78,11 @@ public class OpentsdbConsumer implements IMetricsConsumer {
 
     if (metricList.size() > 0){
       for (OpenTsdbMetric metric : metricList){
-        db.send(metric);
+        try {
+          db.send(metric);
+        } catch (RuntimeException ex){
+          logger.warn("fail to sending metric: {} \n cause: {}" , metric , ex.getMessage());
+        }
       }
 
     }
@@ -107,7 +112,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         if (value != null && value instanceof Number) {
           retMetrics.add(
               OpenTsdbMetric.named(metricKey)
-                  .withTags(metricAttrs)
+                  .withTags(newMetricAttrs)
                   .withTimestamp(timestamp)
                   .withValue(value)
                   .build()
@@ -132,8 +137,10 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         ArrayList<String> newMetricId = new ArrayList<String>(metricId);
         Map<String, String> newMetricAttrs = new HashMap<String, String>(metricAttrs);
         if (matcher.matches()) {
-          String partition = matcher.group(1);
-          String metricName = matcher.group(2);
+          String topicName = matcher.group(1);
+          String partition = matcher.group(2);
+          String metricName = matcher.group(3);
+          newMetricId.add(topicName);
           newMetricId.add(metricName);
           newMetricAttrs.put("partition", partition);
         } else {
@@ -144,7 +151,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
         if (value != null && value instanceof Number) {
           retMetrics.add(
               OpenTsdbMetric.named(metricKey)
-                  .withTags(metricAttrs)
+                  .withTags(newMetricAttrs)
                   .withTimestamp(timestamp)
                   .withValue(value)
                   .build()
