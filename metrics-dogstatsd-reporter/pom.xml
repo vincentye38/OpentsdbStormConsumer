@@ -54,4 +54,17 @@
       </plugin>
     </plugins>
   </build>
+
+  <distributionManagement>
+    <repository>
+      <id>trulia.internal</id>
+      <name>Trulia Internal Repository</name>
+      <url>http://maven.sv2.trulia.com/content/repositories/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>trulia.internal</id>
+      <name>Trulia Internal Repository</name>
+      <url>http://maven.sv2.trulia.com/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
 </project>
