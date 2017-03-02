@@ -29,6 +29,7 @@ public class OpentsdbConsumer implements IMetricsConsumer {
 
   public void prepare(Map stormConf, Object registrationArgument, TopologyContext context, IErrorReporter errorReporter) {
     db = OpenTsdb.forService((String)registrationArgument).create();
+    db.setBatchSizeLimit(10);
     topology = ((String)stormConf.get(Config.TOPOLOGY_NAME)).trim();
     KafkaOffsetMetricPatter = Pattern.compile("(.*)/partition_(\\d*)/(\\w*)");
     kafkaPartitionMetricPatter = Pattern.compile("(Partition\\{host=.*,\\spartition=(\\d*)\\}/)(.*)");
@@ -79,16 +80,15 @@ public class OpentsdbConsumer implements IMetricsConsumer {
       logger.debug("metrics preparation time: " + (System.currentTimeMillis() - start));
     }
     if (metricList.size() > 0){
+      long start = System.currentTimeMillis();
       for (OpenTsdbMetric metric : metricList){
         try {
-          long start = System.currentTimeMillis();
           db.send(metric);
-          logger.debug("send time: " + (System.currentTimeMillis() - start));
         } catch (RuntimeException ex){
           logger.warn("fail to sending metric: {} \n cause: {}" , metric , ex.getMessage());
         }
       }
-
+      logger.debug("send time: " + (System.currentTimeMillis() - start));
     }
   }
 
