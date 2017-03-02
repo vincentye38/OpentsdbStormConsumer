@@ -39,47 +39,51 @@ public class OpentsdbConsumer implements IMetricsConsumer {
 
     Set<OpenTsdbMetric> metricList = new HashSet<OpenTsdbMetric>();
     Map<String, String> metricAttrs = taskInfoToMap(taskInfo);
+    {
+      long start = System.currentTimeMillis();
+      for (DataPoint dp : dataPoints) {
+        ArrayList<String> metricId = new ArrayList<String>();
+        metricId.add(topology);
+        String name = dp.name;
+        metricId.add(name);
 
-    for (DataPoint dp : dataPoints){
-      ArrayList<String> metricId = new ArrayList<String>();
-      metricId.add(topology);
-      String name = dp.name;
-      metricId.add(name);
+        if ("kafkaOffset".equals(name)) {
+          Set<OpenTsdbMetric> ret = kafkaOffsetDatapointToMetric(new ArrayList<String>(metricId), new HashMap<String, String>(metricAttrs), dp, taskInfo.timestamp);
+          if (ret != null) metricList.addAll(ret);
+        } else if ("kafkaPartition".equals(name)) {
+          Set<OpenTsdbMetric> ret = kafkaPartitionDatapointToMetrics(new ArrayList<String>(metricId), new HashMap<String, String>(metricAttrs), dp, taskInfo.timestamp);
+          if (ret != null) metricList.addAll(ret);
+        } else {
+          Map<LinkedList<String>, Object> allMetrics = flattenMap(dp);
+          for (Map.Entry<LinkedList<String>, Object> metric : allMetrics.entrySet()) {
+            metric.getKey().addFirst(topology);
+            String metricKey = StringUtils.join(metric.getKey(), '.').replace(':', '_').replace('/', '_').replace(' ', '_');
 
-      if ("kafkaOffset".equals(name)) {
-        Set<OpenTsdbMetric> ret = kafkaOffsetDatapointToMetric(new ArrayList<String>(metricId), new HashMap<String, String>(metricAttrs), dp, taskInfo.timestamp);
-        if (ret != null) metricList.addAll(ret);
-      } else if ("kafkaPartition".equals(name)) {
-        Set<OpenTsdbMetric> ret = kafkaPartitionDatapointToMetrics(new ArrayList<String>(metricId), new HashMap<String, String>(metricAttrs), dp, taskInfo.timestamp);
-        if (ret != null) metricList.addAll(ret);
-      } else {
-        Map<LinkedList<String>, Object> allMetrics = flattenMap(dp);
-        for (Map.Entry<LinkedList<String>, Object> metric : allMetrics.entrySet()){
-          metric.getKey().addFirst(topology);
-          String metricKey = StringUtils.join(metric.getKey(), '.').replace(':','_').replace('/','_').replace(' ', '_');
-
-          Object value = metric.getValue();
-          if (value instanceof Number){
-            metricList.add(
+            Object value = metric.getValue();
+            if (value instanceof Number) {
+              metricList.add(
                 OpenTsdbMetric.named(metricKey)
-                    .withTags(metricAttrs)
-                    .withTimestamp(taskInfo.timestamp)
-                    .withValue(value)
-                    .build()
-            );
-          } else {
-            logger.error("{}'s value type is {}, except Number", name, value.getClass().getSimpleName());
+                  .withTags(metricAttrs)
+                  .withTimestamp(taskInfo.timestamp)
+                  .withValue(value)
+                  .build()
+              );
+            } else {
+              logger.warn("{}'s value type is {}, except Number", name, value.getClass().getSimpleName());
+            }
+
           }
-
         }
+
       }
-
+      logger.debug("metrics preparation time: " + (System.currentTimeMillis() - start));
     }
-
     if (metricList.size() > 0){
       for (OpenTsdbMetric metric : metricList){
         try {
+          long start = System.currentTimeMillis();
           db.send(metric);
+          logger.debug("send time: " + (System.currentTimeMillis() - start));
         } catch (RuntimeException ex){
           logger.warn("fail to sending metric: {} \n cause: {}" , metric , ex.getMessage());
         }
