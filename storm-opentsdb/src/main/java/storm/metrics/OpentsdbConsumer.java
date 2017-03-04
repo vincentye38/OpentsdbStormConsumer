@@ -20,7 +20,8 @@ import java.util.regex.Pattern;
  */
 public class OpentsdbConsumer implements IMetricsConsumer {
   final static Logger logger = LoggerFactory.getLogger(OpentsdbConsumer.class);
-
+  public final static String OPENTSDB_URL_ARG = "url";
+  public final static String BATCH_LIMIT_ARG = "batch_limit";
   transient private OpenTsdb db;
   transient private String topology;
   transient private Pattern KafkaOffsetMetricPatter;
@@ -28,8 +29,10 @@ public class OpentsdbConsumer implements IMetricsConsumer {
 
 
   public void prepare(Map stormConf, Object registrationArgument, TopologyContext context, IErrorReporter errorReporter) {
-    db = OpenTsdb.forService((String)registrationArgument).create();
-    db.setBatchSizeLimit(10);
+    Map<String, Object> args = (Map<String, Object>)registrationArgument;
+    db = OpenTsdb.forService((String)args.get(OPENTSDB_URL_ARG)).create();
+    db.setBatchSizeLimit(((Number)args.getOrDefault(BATCH_LIMIT_ARG, 0)).intValue());
+
     topology = ((String)stormConf.get(Config.TOPOLOGY_NAME)).trim();
     KafkaOffsetMetricPatter = Pattern.compile("(.*)/partition_(\\d*)/(\\w*)");
     kafkaPartitionMetricPatter = Pattern.compile("(Partition\\{host=.*,\\spartition=(\\d*)\\}/)(.*)");
