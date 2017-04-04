@@ -67,6 +67,10 @@ public class DogStatsDReporter extends ScheduledReporter{
       statsDClient.recordGaugeValue(MetricRegistry.name(name), (Long) value, eventTags(gauge));
     } else if (value instanceof Double){
       statsDClient.recordGaugeValue(MetricRegistry.name(name), (Double) value, eventTags(gauge));
+    } else if (value instanceof Integer) {
+      statsDClient.recordGaugeValue(MetricRegistry.name(name), ((Integer) value).longValue(), eventTags(gauge));
+    } else if (value instanceof Float){
+      statsDClient.recordGaugeValue(MetricRegistry.name(name), ((Float) value).doubleValue(), eventTags(gauge));
     } else {
       logger.warn("gauge is not supported for type: " + value.getClass().getSimpleName() + " for name: " + name);
     }
