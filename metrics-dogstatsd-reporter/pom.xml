@@ -6,7 +6,7 @@
 
   <groupId>com.trulia</groupId>
   <artifactId>metrics-dogstatsd-reporter</artifactId>
-  <version>1.0</version>
+  <version>1.1</version>
 
   <dependencies>
     <dependency>
@@ -23,6 +23,20 @@
       <groupId>com.github.sps.metrics</groupId>
       <artifactId>metrics-opentsdb</artifactId>
       <version>1.0.8</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jersey-media-json-jackson</artifactId>
+          <groupId>org.glassfish.jersey.media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jersey-client</artifactId>
+          <groupId>org.glassfish.jersey.core</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>metrics-core</artifactId>
+          <groupId>io.dropwizard.metrics</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 
