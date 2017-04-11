@@ -42,8 +42,9 @@ public class KafkaDogStatsdReporter extends ProducerReporter{
   public void configure(Map<String, ?> configs) {
     super.configure(configs);
 
-    Integer port = (Integer) configs.get(STATSD_PORT);
-    if (port != null){
+    Object portObj = configs.get(STATSD_PORT);
+    if (portObj != null){
+      Integer port = portObj instanceof Number ? ((Number) portObj).intValue() : Integer.parseInt((String) portObj) ;
       this.port = port;
     }
     String host = (String)configs.get(STATSD_HOST);
